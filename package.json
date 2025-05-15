@@ -3,9 +3,14 @@
   "version": "1.0.0",
   "description": "implementation of the zk-kit lean incremental merkle tree",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "anthony-spedaliere",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "@zk-kit/lean-imt": "^2.2.3",
+    "poseidon-lite": "^0.3.0"
+  }
 }
