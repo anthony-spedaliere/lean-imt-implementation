@@ -1,6 +1,6 @@
 # Lean IMT Implementation
 
-This project implements a zero-knowledge proof system using the zk-kit Lean Incremental Merkle Tree (IMT) and Poseidon hashing for address verification.
+This project implements a Lean Incremental Merkle Tree (IMT) using the zk-kit repository and Poseidon hashing for address verification.
 
 ## Project Structure
 
@@ -8,7 +8,6 @@ This project implements a zero-knowledge proof system using the zk-kit Lean Incr
 lean-imt-implementation/
 ├── package.json
 ├── poseidon-hash.js
-└── circomlib/          # Contains circuit templates and utilities
 ```
 
 ## Dependencies
@@ -157,10 +156,17 @@ const addrArr = [
   "0x3456789012345678901234567890123456789012",
 ];
 
-const hashedAddresses = addrArr.map((addr) => {
+// create leaves from array of addresses
+const leaves = addrArr.map((addr) => {
   const addrBigInt = BigInt(addr);
   return poseidon1([addrBigInt]);
 });
+
+// Hash function used to compute the tree nodes.
+const hash = (a, b) => poseidon2([a, b]);
+
+// To create an instance of a LeanIMT, you must provide the hash function.
+const tree = new LeanIMT(hash, leaves);
 ```
 
 ## Notes
