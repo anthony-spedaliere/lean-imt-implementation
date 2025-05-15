@@ -145,15 +145,19 @@ npm install
 node poseidon-hash.js
 ```
 
-## Example Code
+## Verify a Proof Example
 
 ```javascript
 import { poseidon1 } from "poseidon-lite";
 
 const addrArr = [
-  "0x1234567890123456789012345678901234567890",
-  "0x2345678901234567890123456789012345678901",
-  "0x3456789012345678901234567890123456789012",
+  "0x8D9e68f9E17B5222aa77fBb7AAeA064e53DC413e",
+  "0x3D4ca351745cbe02545Ee51B80f969BA66FDD41a",
+  "0xccEb7C459eE01bb4EF952B11fcD1F6fD5c0fD82F",
+  "0xFB7126e470A9ee840dDE6D79F1288BCBF6469Bec",
+  "0x25941dC771bB64514Fc8abBce970307Fb9d477e9",
+  "0x23531E4471A7b00bab9Eb1a9d4110c42347AA3f8",
+  "0x34c8F15A1EDA5866cCD3691892299817F8F76178",
 ];
 
 // create leaves from array of addresses
@@ -162,12 +166,128 @@ const leaves = addrArr.map((addr) => {
   return poseidon1([addrBigInt]);
 });
 
+/* Output:
+leaves =
+[
+  84323531924087938411606892374143252317847702116823359817340060257157521103n,
+  1928555040269776337019527361600830396672047411266326305279355799039062635918n,
+  14896678562227846926035183435832341426461656669957925298005963468490173975546n,
+  21147815564025509079099397027785622564465213655888548785926744406631903929822n,
+  17482021471675495101237084517865173060144002967824755291888514730621888066281n,
+  2054220180167263657899489396694880273062812098272424919076997394501499589490n,
+  6289636076483596341661392944291726906607111640373990132644535085020545391859n
+]
+*/
+
 // Hash function used to compute the tree nodes.
 const hash = (a, b) => poseidon2([a, b]);
 
 // To create an instance of a LeanIMT, you must provide the hash function.
 const tree = new LeanIMT(hash, leaves);
+
+/* Output of tree object:
+LeanIMT {
+  _nodes: [
+    [
+      84323531924087938411606892374143252317847702116823359817340060257157521103n,
+      1928555040269776337019527361600830396672047411266326305279355799039062635918n,
+      14896678562227846926035183435832341426461656669957925298005963468490173975546n,
+      21147815564025509079099397027785622564465213655888548785926744406631903929822n,
+      17482021471675495101237084517865173060144002967824755291888514730621888066281n,
+      2054220180167263657899489396694880273062812098272424919076997394501499589490n,
+      6289636076483596341661392944291726906607111640373990132644535085020545391859n
+    ],
+    [
+      4246323578213067594010191527183051960266125765430141077690298023191182817366n,
+      21479780013679775985103376540555077863265788970764668544692584425383716516597n,
+      5803674321476970073603198009991172429289834009520972947325055576869551490176n,
+      6289636076483596341661392944291726906607111640373990132644535085020545391859n
+    ],
+    [
+      3715082019088909119412291294567857709374409494339175374010393581880677519959n,
+      12876776345669866027730027561215304650967697889832689890989409130112416560352n
+    ],
+    [
+      14399877305156729065299144764623667981314822471746316339735508494966128709093n
+    ]
+  ],
+  _hash: [Function: hash]
+}
+*/
+tree.generateProof(0);
+
+/*Output of proof object at index 0:
+index: 0,
+  siblings: [
+    1928555040269776337019527361600830396672047411266326305279355799039062635918n,
+    21479780013679775985103376540555077863265788970764668544692584425383716516597n,
+    12876776345669866027730027561215304650967697889832689890989409130112416560352n
+  ]
+*/
 ```
+
+3. Verify the proof
+
+```javascript
+
+tree.verifyProof(proof1);
+
+ /**
+     * It verifies a {@link LeanIMTMerkleProof} to confirm that a leaf indeed
+     * belongs to a tree.
+     * @param proof The Merkle tree proof.
+     * @returns True if the leaf is part of the tree, and false otherwise.
+ */
+    public static verifyProof<N>(proof: LeanIMTMerkleProof<N>, hash: LeanIMTHashFunction<N>): boolean {
+        requireDefined(proof, "proof")
+
+        const { root, leaf, siblings, index } = proof
+
+        requireDefined(proof.root, "proof.root")
+        requireDefined(proof.leaf, "proof.leaf")
+        requireDefined(proof.siblings, "proof.siblings")
+        requireDefined(proof.index, "proof.index")
+
+        requireArray(proof.siblings, "proof.siblings")
+        requireNumber(proof.index, "proof.index")
+
+        let node = leaf
+
+        for (let i = 0; i < siblings.length; i += 1) {
+            if ((index >> i) & 1) {
+                node = hash(siblings[i], node)
+            } else {
+                node = hash(node, siblings[i])
+            }
+        }
+
+        return root === node
+    }
+```
+
+#### How verify proof works
+
+```javascript
+let node = leaf;
+
+for (let i = 0; i < siblings.length; i += 1) {
+  if ((index >> i) & 1) {
+    node = hash(siblings[i], node); // current node is on the right
+  } else {
+    node = hash(node, siblings[i]); // current node is on the left
+  }
+}
+
+return root === node;
+```
+
+This loop:
+
+Rebuilds the hash path from the leaf to the root.
+
+Uses the index to determine the node’s position (left/right) at each level.
+
+At each level, it merges the current node with its sibling using the Merkle hash function (poseidon2).
 
 ## Notes
 

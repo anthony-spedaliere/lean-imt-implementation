@@ -17,6 +17,8 @@ const leaves = addrArr.map((addr) => {
   return poseidon1([addrBigInt]);
 });
 
+console.log(leaves);
+
 // Hash function used to compute the tree nodes.
 const hash = (a, b) => poseidon2([a, b]);
 
